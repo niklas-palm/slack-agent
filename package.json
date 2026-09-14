@@ -1,0 +1,37 @@
+{
+  "name": "slack-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Slack-triggered Strands agent on AWS Bedrock AgentCore Runtime that acts on a user's behalf via On-Behalf-Of token exchange.",
+  "scripts": {
+    "start": "tsx --env-file-if-exists=.env.local src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint 'src/**/*.ts' 'lambda/**/*.ts' 'cdk/**/*.ts' && prettier --check 'src/**/*.ts' 'lambda/**/*.ts' 'cdk/**/*.ts'",
+    "format": "eslint 'src/**/*.ts' 'lambda/**/*.ts' 'cdk/**/*.ts' --fix && prettier --write 'src/**/*.ts' 'lambda/**/*.ts' 'cdk/**/*.ts'"
+  },
+  "dependencies": {
+    "@aws-crypto/sha256-js": "^5.2.0",
+    "@aws-sdk/client-ssm": "^3.1049.0",
+    "@aws-sdk/credential-provider-node": "^3.972.0",
+    "@aws/aws-distro-opentelemetry-node-autoinstrumentation": "^0.12.0",
+    "@aws/bedrock-token-generator": "^1.1.0",
+    "@opentelemetry/api": "^1.9.1",
+    "@smithy/signature-v4": "^5.4.0",
+    "@strands-agents/sdk": "^1.17.0",
+    "bedrock-agentcore": "^0.4.3",
+    "openai": "^6.49.0",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.7.0",
+    "eslint": "^10.4.1",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.3",
+    "tsx": "^4.19.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.60.1"
+  }
+}

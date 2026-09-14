@@ -1,0 +1,20 @@
+.env.local
+*.env.local
+node_modules/
+.DS_Store
+.claude/
+.vscode/
+cdk.out/
+dist/
+*.tsbuildinfo
+__pycache__/
+blog*.md
+.aws-account
+
+# Local notes, drafts and scratch files, intentionally untracked
+NOTES*.md
+diagram.html
+.playwright-mcp/
+
+# Untracked override for your own Okta values
+config.local.json

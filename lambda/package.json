@@ -1,0 +1,17 @@
+{
+  "name": "slack-agent-lambdas",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "comment": "One place for the Lambdas' AWS SDK types. CDK bundles each handler from the repo root and lists these as externalModules, so this exists purely so tsc can resolve them.",
+  "dependencies": {
+    "@aws-sdk/client-bedrock-agentcore": "^3.943.0",
+    "@aws-sdk/client-dynamodb": "^3.1053.0",
+    "@aws-sdk/client-ssm": "^3.1049.0",
+    "@aws-sdk/lib-dynamodb": "^3.1053.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.145",
+    "@types/node": "^22.7.0"
+  }
+}

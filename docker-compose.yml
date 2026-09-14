@@ -1,0 +1,31 @@
+services:
+  mock-slack:
+    image: node:22-slim
+    platform: linux/arm64
+    working_dir: /app
+    volumes:
+      - ./test/mock-slack:/app
+    command: ["node", "server.js"]
+    ports:
+      - "8090:8090"
+    environment:
+      - MOCK_SLACK_PORT=8090
+
+  agent:
+    build:
+      context: .
+    image: slack-agent:local
+    platform: linux/arm64
+    ports:
+      - "${PORT:-8080}:8080"
+    env_file:
+      - path: .env.local
+        required: false
+    volumes:
+      - ./src:/app/src
+    environment:
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_SESSION_TOKEN
+    depends_on:
+      - mock-slack

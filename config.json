@@ -1,0 +1,10 @@
+{
+  "region": "eu-west-1",
+  "bedrockModelId": "openai.gpt-5.6-luna",
+  "webSearch": true,
+  "tracing": true,
+  "okta": {
+    "domain": "<your-okta-domain>.okta.com",
+    "authorizationServerId": "<your-authorization-server-id>"
+  }
+}
