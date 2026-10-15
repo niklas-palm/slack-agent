@@ -21,7 +21,7 @@ export const SIGNING_SECRET_PARAM = process.env.SIGNING_SECRET_PARAM!;
 export const BOT_TOKEN_PARAM = process.env.BOT_TOKEN_PARAM!;
 // The standalone workload identity user tokens are brokered against. The
 // runtime's own workload identity is service-linked and unusable by a plain
-// caller, which is why this one exists (see OKTA_SETUP.md).
+// caller, which is why this one exists (see "The sign-in flow" in the README).
 const BROKER_WORKLOAD_NAME = process.env.BROKER_WORKLOAD_NAME!;
 const USER_PROVIDER = process.env.USER_PROVIDER!;
 const USER_SCOPES = process.env.USER_SCOPES!.split(' ');

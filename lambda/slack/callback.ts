@@ -69,10 +69,10 @@ export async function handler(ev: APIGatewayProxyEvent): Promise<APIGatewayProxy
       console.error(`token subject mismatch for ${pending.user_id} - refusing to invoke`);
       await say(
         pending,
-        ":no_entry: The account signed in with doesn't match the person who asked. " +
-          'Mention me again with "force re-auth" and sign in as yourself.',
+        ":no_entry: The connected account doesn't match your Slack identity. " +
+          'Mention me again with "force re-auth" to sign in as yourself.',
       );
-      return page(403, 'Wrong account', 'That account does not match the person who asked.');
+      return page(403, 'Wrong account', 'That account does not match your Slack identity.');
     }
 
     console.log(`callback: resuming the agent for ${pending.user_id}`);

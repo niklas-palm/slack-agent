@@ -38,8 +38,6 @@ identity.
 
 ## Deploy
 
-At a glance:
-
 Before you start: pick your region (`region` in `config.json`, default
 `eu-west-1`) and run `make install`. Decide the region now, because the
 credential providers you create in step 1 are regional.
@@ -207,8 +205,8 @@ done:
 ## How it works
 
 **A code agent behind Slack.** The agent is a loop plus the same handful of
-general tools as `harness` (`read_file`, `write_file`, `edit_file`, `bash`,
-`web_fetch`), the same code agent as the harness sample. This sample adds four Slack
+general tools as `minimal-harness` (`read_file`, `write_file`, `edit_file`,
+`bash`, `web_fetch`). This sample adds four Slack
 tools and the identity machinery. `bash` is what makes it a code agent: it
 writes and runs its own scripts (python3, curl) to get things done.
 
@@ -297,7 +295,7 @@ For each request the proxy:
    audience, scopes);
 2. does the On-Behalf-Of exchange with AgentCore Identity (`withAccessToken`
    from the TS SDK), using the workload access token the runtime SDK exposed on
-   the invocation `context` - the user's proven identity;
+   the invocation - the user's proven identity;
 3. calls the real API with the minted token and returns the response.
 
 The API's own JWT authorizer then validates that token and sees the **user's**
@@ -345,12 +343,13 @@ only one of them could have been pushed into the identity provider.
 | Could Okta enforce it? | yes, if it evaluated group conditions on exchange, which it does not | no, a scope or group cannot express per-record access |
 | Scopes | `directory.read`, plus `directory.write` the agent can never obtain | `tickets.read` to list, `tickets.write` to create or modify |
 
-`directory.write` is how the sample shows the ceiling: the scope exists and
-`PATCH /me` requires it, but no Okta rule grants it on the exchange grant, so the
-agent is refused before any API is reached. To watch it happen, ask the bot to
+`directory.write` is how the sample shows the ceiling, and it holds in two
+layers. The catalog only ever asks for `directory.read`, so the agent's token
+never carries the write scope and the API's authorizer refuses `PATCH /me`. And
+even if the catalog asked, no Okta rule grants `directory.write` on the exchange
+grant, so Okta would refuse to mint it. To watch the first layer, ask the bot to
 `PATCH http://127.0.0.1:8899/directory/me` with something like
-`{"office": "Berlin"}`. The proxy answers 403 and the reason is in the runtime
-log: Okta declined to mint a token carrying `directory.write`.
+`{"office": "Berlin"}`: it gets a plain 403 from API Gateway.
 
 ### Adding an internal API
 
@@ -594,8 +593,9 @@ Each failure has its own message in the thread, so start with what the bot said.
 | What you see | What it means |
 |---|---|
 | Nothing at all, no reaction | The events URL or the signing secret is wrong. Check the trigger Lambda's log, then SLACK_SETUP.md step 4. |
-| ":warning: I couldn't work out who you are in Okta" | The bot is missing the `users:read.email` scope (SLACK_SETUP.md step 1). |
-| ":no_entry: The connected account doesn't match your Slack identity" | The token's `sub` is not the user's email. Fix the app's username template (OKTA_SETUP.md step 3). |
+| ":warning: I couldn't look up your email address, so I can't act as you" | The bot is missing the `users:read.email` scope (SLACK_SETUP.md step 1). |
+| ":warning: I couldn't reach the identity provider" | The `okta-signin` credential provider is missing, misnamed, or in another region (OKTA_SETUP.md step 5). |
+| ":no_entry: The connected account doesn't match your Slack identity" | Your Okta user's email differs from your Slack email (OKTA_SETUP.md step 1), or the app's username format isn't the email (step 3). |
 | The sign-in link never completes, or you get a second one | The authorization session expired after ten minutes, or the credential provider is the wrong vendor (OKTA_SETUP.md gotchas). |
 | ":warning: Sorry - something went wrong" | The agent itself failed. The real error is in the runtime log group; the usual cause is model access not enabled in the right region. |
 | The agent replies but says it isn't authorized for an API | Expected for `directory.read` if you are not in `employees`, and for anything needing `directory.write`. That is the ceiling working. |
