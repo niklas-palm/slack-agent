@@ -66,7 +66,7 @@ credential providers you create in step 1 are regional.
   @-mention fails and Slack only shows ":warning: Sorry - something went wrong",
   with the real error in the runtime log group.
 - A **Slack workspace** where you can create and install an app.
-- An **Okta org** (free Integrator plan works) with the apps, authorization
+- An **Okta Integrator org** (free; a Workforce Identity org lacks the token exchange grant) with the apps, authorization
   server, and AgentCore credential providers from **[OKTA_SETUP.md](./OKTA_SETUP.md)**.
   This is the bulk of the one-time identity setup; do it first.
 
@@ -162,7 +162,13 @@ CloudFormation.
 ```
 
 First time, the bot posts a sign-in link in the thread; sign in to Okta and it
-continues automatically and replies with your directory profile. Watch it:
+continues automatically and replies with your directory profile.
+
+The bot matches you by email, so sign in to Okta as the user whose email is the
+same as your Slack profile email. If they differ, it replies ":no_entry: The
+connected account doesn't match your Slack identity".
+
+Watch it:
 
 ```bash
 R=$(make -s region)

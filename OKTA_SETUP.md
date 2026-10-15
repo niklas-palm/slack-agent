@@ -55,7 +55,11 @@ These are yours to name; nothing in the code refers to them:
 | Sign-in app | `slack-agent` | Users log in here. |
 | Exchange app | `agent-exchange` | Performs the on-behalf-of exchange. Not Slack-specific. |
 
-You need an Okta org; the free Integrator plan is enough.
+You need an **Okta Integrator** org, which is free: sign up at
+[developer.okta.com](https://developer.okta.com/signup/). A Workforce Identity org
+will not work, because it lacks the token exchange (on-behalf-of) grant this
+sample depends on. Its console also looks different, so the click paths below
+won't match.
 
 ---
 
