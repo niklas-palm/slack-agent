@@ -24,15 +24,13 @@ Slack trigger and the Okta-JWT + OBO identity machinery added. Read that first
 for the bare agent; read this for how an agent proves and delegates a user's
 identity.
 
-```
-@AgentCore Bot what's my internal directory profile?
-                              │
-   ┌──────────────────────────┴───────────────────────────────┐
-   │ proves your identity (Okta JWT) · exchanges it for a       │
-   │ directory-scoped token (OBO) · calls the internal API      │
-   │ AS YOU · replies in-thread                                 │
-   └────────────────────────────────────────────────────────────┘
-```
+![The harness: the same tool loop, sandbox and tracing as minimal-harness, plus a loopback proxy that is the only path to internal APIs and gets its tokens from a credentials broker.](docs/harness.png)
+
+Mention the bot and ask for your internal directory profile. It proves who you
+are with your Okta token, exchanges that for a directory-scoped token, calls the
+internal API as you, and replies in the thread. The proxy is the only way out to
+an internal API, and it gets its tokens from AgentCore Identity, the credentials
+broker.
 
 ---
 
@@ -594,6 +592,7 @@ lambda/
   internal-tickets/   a second OBO target - read/write, gated per record
 cdk/lib/              runtime / internal-apis / slack
 test/mock-slack/      tiny local Slack Web API stand-in for `make up`
+docs/harness.png      the diagram at the top of this README
 ```
 
 See **[OKTA_SETUP.md](./OKTA_SETUP.md)** for the identity setup, what Okta does
