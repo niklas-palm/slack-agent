@@ -64,7 +64,14 @@ export class InternalApisStack extends Stack {
         bundling: { target: 'node22' },
         environment: spec.environment,
       });
-      spec.table?.grantReadWriteData(fn);
+      // list, create, read-before-update and update; no scans or deletes.
+      spec.table?.grant(
+        fn,
+        'dynamodb:Query',
+        'dynamodb:PutItem',
+        'dynamodb:GetItem',
+        'dynamodb:UpdateItem',
+      );
 
       const api = new CfnApi(this, `${spec.name}Api`, {
         name: `slack-agent-${spec.name.toLowerCase()}`,

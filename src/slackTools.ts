@@ -24,8 +24,8 @@ export interface SlackContext {
   threadTs: string;
 }
 
-const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // Slack's stated cap is 1GB but
-// we keep responses snappy.
+// Slack's stated cap is 1GB, but we keep uploads small so responses stay snappy.
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 
 async function slackPost<T>(
   method: string,
@@ -261,8 +261,8 @@ text outside of these tools.`,
 
 Typical use: write a Python script that generates a chart (matplotlib) or a
 diagram, run it with bash (python3), save it to /workspace/<name>.png, then
-upload it here. Slack
-renders images inline and other types as downloadable attachments.
+upload it here. Slack renders images inline and other types as downloadable
+attachments.
 
 Returns {file_id, title} on success. Requires the bot scope files:write.`,
     inputSchema: z.object({

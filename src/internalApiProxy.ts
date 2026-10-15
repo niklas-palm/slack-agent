@@ -129,10 +129,10 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
     res.end(text);
   } catch (e) {
     // Of the errors this proxy reports itself, only a refused exchange is an
-    // authorization answer, so only that is a 403,
-    // which the system prompt tells the agent not to retry. Everything else,
-    // including anything thrown outside forwardAsUser, is reported as transient
-    // so the agent does not tell the user they lack access after a network blip.
+    // authorization answer, so only that is a 403, which the system prompt tells
+    // the agent not to retry. Everything else, including anything thrown outside
+    // forwardAsUser, is reported as transient, so the agent does not tell the
+    // user they lack access after a network blip.
     const refused = (e as { stage?: string }).stage === 'exchange';
     send(res, refused ? 403 : 502, {
       error: errMsg(e),

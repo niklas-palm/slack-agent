@@ -43,7 +43,6 @@ const server = http.createServer(async (req, res) => {
     } catch {
       return send(res, 400, { ok: false, error: 'body is not valid JSON' });
     }
-    // eslint-disable-next-line no-console
     console.log('[mock-slack] chat.postMessage:', JSON.stringify(body, null, 2));
     return send(res, 200, { ok: true, ts: String(Date.now() / 1000), channel: body.channel });
   }
@@ -52,6 +51,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  // eslint-disable-next-line no-console
   console.log(`[mock-slack] listening on :${PORT}`);
 });

@@ -217,7 +217,7 @@ that token for the @-mentioning user (brokered through AgentCore Identity) and
 invokes the runtime with it. So by the time the agent runs, AgentCore holds the
 user's proven identity on the workload context.
 
-**Acting on the user's behalf (OBO).** The agent never handles a token. It
+**Acting on the user's behalf (OBO).** The agent never handles the user's token. It
 calls internal APIs through a tiny **loopback proxy** the harness runs inside
 the microVM: its own code (python3 or curl via `bash`) hits
 `http://127.0.0.1:8899/<api>/<path>` with no credentials. The proxy looks the
@@ -303,8 +303,8 @@ The API's own JWT authorizer then validates that token and sees the **user's**
 token's `groups` claim.
 
 `GET http://127.0.0.1:8899/` lists the APIs with descriptions, so discovery is
-one call. The system prompt tells the agent the mechanism; it never sees a
-token, a scope or an audience.
+one call. The system prompt tells the agent the mechanism; it never sees the
+user's token, a scope or an audience.
 
 **Why a proxy and not a tool or an SDK in the sandbox.** A hand-written tool per
 API is coupling, and a code agent with a shell can route around it anyway. An
@@ -320,7 +320,8 @@ buys is that no token is ever in the model's context, on disk, or in the
 environment, and that the runtime's role is scoped so that nothing minted from
 inside the sandbox could exceed what the proxy would have handed back anyway.
 If you need more than that, the next step is a separate code sandbox the proxy
-sits outside of.
+sits outside of. The two credentials the shell can still reach through that role
+are listed under [Shortcuts taken for the sample](#shortcuts-taken-for-the-sample).
 
 **Scopes are owned by the catalog, and capped by Okta.** The agent names an API
 and a path; the proxy decides what to request, so the model can't escalate.

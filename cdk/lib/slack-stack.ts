@@ -110,7 +110,8 @@ export class SlackStack extends Stack {
         ],
       }),
     );
-    sessions.grantReadWriteData(role);
+    // Park a request (events) and claim it atomically (callback); nothing else.
+    sessions.grant(role, 'dynamodb:PutItem', 'dynamodb:DeleteItem');
 
     const environment = {
       RUNTIME_ARN: runtimeArn,
