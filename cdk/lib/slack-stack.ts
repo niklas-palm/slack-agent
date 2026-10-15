@@ -91,12 +91,13 @@ export class SlackStack extends Stack {
       }),
     );
     // AgentCore reads the provider's client secret with OUR credentials when it
-    // talks to Okta, so the caller needs this.
+    // talks to Okta, so the caller needs this - for the sign-in provider only.
+    // AgentCore appends a random suffix to the secret name.
     role.addToPolicy(
       new PolicyStatement({
         actions: ['secretsmanager:GetSecretValue'],
         resources: [
-          `arn:aws:secretsmanager:${region}:${account}:secret:bedrock-agentcore-identity!*`,
+          `arn:aws:secretsmanager:${region}:${account}:secret:bedrock-agentcore-identity!default/oauth2/${userProvider}-*`,
         ],
       }),
     );

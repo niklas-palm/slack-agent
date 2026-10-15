@@ -128,12 +128,16 @@ export class RuntimeStack extends Stack {
       }),
     );
 
-    // SSM SecureString reads - the Slack bot token is provisioned out-of-band
-    // by the operator at /<stackName>/secrets/shared/*.
+    // The Slack bot token, and nothing else under that prefix. The signing
+    // secret sits beside it, but only the trigger may read that: the agent runs
+    // arbitrary shell under this role, and whoever holds the signing secret can
+    // forge a mention as any signed-in user.
     role.addToPolicy(
       new PolicyStatement({
-        actions: ['ssm:GetParameter', 'ssm:GetParameters'],
-        resources: [`arn:aws:ssm:${region}:${account}:parameter/${stackName}/secrets/shared/*`],
+        actions: ['ssm:GetParameter'],
+        resources: [
+          `arn:aws:ssm:${region}:${account}:parameter/${stackName}/secrets/shared/slack-bot-token`,
+        ],
       }),
     );
 

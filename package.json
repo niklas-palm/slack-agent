@@ -6,10 +6,7 @@
   "license": "MIT",
   "description": "Slack-triggered Strands agent on AWS Bedrock AgentCore Runtime that acts on a user's behalf via On-Behalf-Of token exchange.",
   "scripts": {
-    "start": "tsx --env-file-if-exists=.env.local src/server.ts",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint 'src/**/*.ts' 'lambda/**/*.ts' 'cdk/**/*.ts' && prettier --check 'src/**/*.ts' 'lambda/**/*.ts' 'cdk/**/*.ts'",
-    "format": "eslint 'src/**/*.ts' 'lambda/**/*.ts' 'cdk/**/*.ts' --fix && prettier --write 'src/**/*.ts' 'lambda/**/*.ts' 'cdk/**/*.ts'"
+    "start": "tsx --env-file-if-exists=.env.local src/server.ts"
   },
   "dependencies": {
     "@aws-crypto/sha256-js": "^5.2.0",

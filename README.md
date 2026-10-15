@@ -181,7 +181,7 @@ To re-authenticate (switch accounts / clear a cached token), include
 
 ```bash
 make deploy     # rebuilds the image only if code changed
-make destroy    # prompts once per stack
+make destroy    # asks once, then removes all three stacks
 ```
 
 Idle cost is close to nothing: the per-mention cost is the model call, plus
@@ -376,7 +376,8 @@ it the first time is interactive, and the Slack trigger must answer Slack within
    it), and returns. Nothing is left running.
 3. The user clicks, signs in to Okta, and AgentCore redirects them to our
    **callback**. That request is the signal that the human finished, so there
-   is nothing to poll and no deadline of our own.
+   is nothing to poll. The only deadline is AgentCore's ten-minute authorization
+   session, which the parked request's TTL mirrors.
 4. The callback reads the parked request, calls `CompleteResourceTokenAuth` to
    vault the token, reads that token straight back out of the vault, checks it
    belongs to this user, posts a checkmark, and invokes the runtime. No
@@ -389,8 +390,9 @@ does **not** verify the IdP-authenticated subject - so a stale browser SSO
 session could vault a token for a *different* Okta user. Before invoking the
 agent (in both the trigger Lambda and the callback), we decode the token and
 require **`sub == the Slack-resolved email`**. On mismatch we refuse, post an
-error, and do not invoke. No fallback. (This requires the Okta app's username
-format to be Email, so `sub` is the email - see OKTA_SETUP.md step 3.)
+error, and do not invoke. No fallback. (This requires the token's `sub` to be
+your Slack email: the same address in Okta and Slack, and an app username format
+that yields it - see OKTA_SETUP.md steps 1 and 3.)
 
 ---
 
@@ -406,6 +408,11 @@ format to be Email, so `sub` is the email - see OKTA_SETUP.md step 3.)
 - **No per-user filtering of the catalog.** The agent may try an API this user
   cannot reach and gets a clean 403, which the prompt tells it means the user is
   unauthorized rather than something being broken.
+- **The agent's shell can use the bot token.** The runtime needs it to post, and
+  the shell shares the runtime's role, so code the agent writes could read any
+  channel the bot has been invited to, not just the one it was mentioned in. The
+  Slack tools themselves are pinned to the thread. In anything real, run the
+  agent's code in a separate sandbox that does not hold the runtime's role.
 
 ## The toolset
 

@@ -1,7 +1,7 @@
 // The ticket store the internal API serves.
 //
-// Tickets have real state, so the store lives here and the handler above only
-// does auth and shape.
+// Tickets have real state, so the store lives here and handler.ts only does auth
+// and shape.
 //
 // Every function takes the caller's verified `subject` and uses it as the
 // partition key. That is the authorization: you cannot read, modify or address a

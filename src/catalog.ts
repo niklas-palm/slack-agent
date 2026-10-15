@@ -18,7 +18,7 @@ export interface CatalogEntry {
   baseUrl: string;
   /** AgentCore Identity OBO credential provider. */
   provider: string;
-  /** Downstream audience the token is minted for (per-API). */
+  /** Audience the token is minted for. Both APIs here share one. */
   audience: string;
   /** Scopes requested in the exchange. */
   scopes: string[];

@@ -90,11 +90,12 @@ function workspacePath(rel: string): string {
 // agent terminating without a reply). Goes through the same chat.postMessage
 // path the tool uses, but doesn't require the agent to be alive.
 export async function postFallbackToThread(ctx: SlackContext, text: string): Promise<void> {
-  await slackPost<SlackOk & { ts?: string }>('chat.postMessage', ctx.botToken, {
+  const r = await slackPost<SlackOk>('chat.postMessage', ctx.botToken, {
     channel: ctx.channel,
     thread_ts: ctx.threadTs,
     text,
   });
+  if (!r.ok) throw new Error(r.error ?? 'unknown');
 }
 
 export function buildSlackTools(ctx: SlackContext) {

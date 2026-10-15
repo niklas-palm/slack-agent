@@ -39,10 +39,10 @@ export function setWorkloadToken(token: string | undefined): void {
 // (the one its authorizer validated on the way in) as the subject of the
 // exchange. That is why the harness never handles the raw user JWT. Okta needs two
 // things AgentCore doesn't send by default - a subject-token-type of
-// access_token and the per-API audience - so we pass them in customParameters.
+// access_token and the API's audience - so we pass them in customParameters.
 async function forwardAsUser(
   entry: CatalogEntry,
-  userToken: string,
+  workloadToken: string,
   target: string,
   method: string,
   body?: string,
@@ -52,7 +52,7 @@ async function forwardAsUser(
   // API itself. The callback only runs once a token has been minted.
   let exchanged = false;
   const call = withAccessToken({
-    workloadIdentityToken: userToken,
+    workloadIdentityToken: workloadToken,
     providerName: entry.provider,
     scopes: entry.scopes,
     authFlow: 'ON_BEHALF_OF_TOKEN_EXCHANGE',
@@ -76,12 +76,6 @@ async function forwardAsUser(
 }
 
 function send(res: ServerResponse, status: number, body: unknown): void {
-  // The response may already be streaming if a later step threw. Writing the
-  // head twice throws inside a rejection handler and takes the process down.
-  if (res.headersSent) {
-    res.end();
-    return;
-  }
   res.writeHead(status, { 'content-type': 'application/json' });
   res.end(JSON.stringify(body));
 }

@@ -64,7 +64,7 @@ export async function loadParam(name: string): Promise<string> {
 // equal the Slack-resolved email. AgentCore files a token under whatever userId
 // we assert, so a stale browser session, or a bystander clicking the sign-in
 // link, can vault someone else's token under this user. We refuse to act on it.
-// Requires the Okta app-assignment username to equal the email (OKTA_SETUP.md).
+// Requires the same email in Okta and Slack (OKTA_SETUP.md steps 1 and 3).
 export function tokenIdentityMatches(jwt: string, expectedEmail: string): boolean {
   try {
     const part = jwt.split('.')[1];
@@ -114,31 +114,40 @@ export async function brokerOktaToken(
 
 // Post into the thread, never expanding link previews. That matters for the
 // sign-in link: AgentCore's request_uri is single-use, and Slack's preview bot
-// would consume it before the human clicks.
+// would consume it before the human clicks. Best-effort: every caller is
+// already on its way out, so a failed post is logged rather than thrown.
 export async function postToThread(channel: string, threadTs: string, text: string): Promise<void> {
-  const token = await loadParam(BOT_TOKEN_PARAM);
-  const r = await fetch('https://slack.com/api/chat.postMessage', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      channel,
-      thread_ts: threadTs,
-      text,
-      unfurl_links: false,
-      unfurl_media: false,
-    }),
-  });
-  // Slack answers 200 with ok:false on failure; surface it or it is silent.
-  const body = (await r.json()) as { ok: boolean; error?: string };
-  if (!body.ok) throw new Error(`chat.postMessage failed: ${body.error ?? 'unknown'}`);
+  try {
+    const token = await loadParam(BOT_TOKEN_PARAM);
+    const r = await fetch('https://slack.com/api/chat.postMessage', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        channel,
+        thread_ts: threadTs,
+        text,
+        unfurl_links: false,
+        unfurl_media: false,
+      }),
+    });
+    // Slack answers 200 with ok:false on failure, so check the body.
+    const body = (await r.json()) as { ok: boolean; error?: string };
+    if (!body.ok) throw new Error(body.error ?? 'unknown');
+  } catch (e) {
+    console.error('slack post failed', e);
+  }
 }
 
-/** Best-effort message into the thread a parked request came from. */
-export async function say(req: PendingRequest, text: string): Promise<void> {
-  await postToThread(req.channel_id, req.thread_ts, text).catch((e) =>
-    console.error('slack post failed', e),
-  );
+/** Post into the thread a parked request came from. */
+export function say(req: PendingRequest, text: string): Promise<void> {
+  return postToThread(req.channel_id, req.thread_ts, text);
 }
+
+// Both Lambdas refuse with the same words, so what the user sees is what the
+// README's troubleshooting table quotes.
+export const IDENTITY_MISMATCH =
+  ":no_entry: The connected account doesn't match your Slack identity. " +
+  'Mention me again with "force re-auth" to sign in as yourself.';
 
 // Invoke the runtime with the user's Okta token as the Bearer credential. The
 // runtime's JWT authorizer validates it, and that is what makes the identity

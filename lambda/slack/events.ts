@@ -13,6 +13,7 @@ import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 import {
   BOT_TOKEN_PARAM,
+  IDENTITY_MISMATCH,
   SESSION_TABLE,
   SESSION_TTL_SECONDS,
   SIGNING_SECRET_PARAM,
@@ -136,16 +137,21 @@ export async function handler(ev: APIGatewayProxyEvent): Promise<APIGatewayProxy
       threadTs,
       ":warning: I couldn't look up your email address, so I can't act as you. " +
         'The bot may be missing the `users:read.email` scope.',
-    ).catch(() => {});
+    );
     return { statusCode: 200, body: 'ok (email unresolved)' };
   }
   console.log(`mention from ${event.user} (${email}) forceReauth=${forceReauth}`);
 
   // A bare "@bot" with no words is a likely first interaction. The runtime
   // rejects an empty prompt, so answer here rather than leave them waiting.
-  const prompt = text.replace(/<@[A-Z0-9]+>\s*/g, '').trim();
-  if (!prompt) {
-    await postToThread(channel, threadTs, 'What would you like me to do?').catch(() => {});
+  // "force re-auth" is an instruction to us, not to the agent, so it is taken
+  // out; on its own it still triggers a fresh sign-in.
+  const prompt = text
+    .replace(/<@[A-Z0-9]+>\s*/g, '')
+    .replace(/force re-?auth/gi, '')
+    .trim();
+  if (!prompt && !forceReauth) {
+    await postToThread(channel, threadTs, 'What would you like me to do?');
     return { statusCode: 200, body: 'ok (empty prompt)' };
   }
 
@@ -167,7 +173,7 @@ export async function handler(ev: APIGatewayProxyEvent): Promise<APIGatewayProxy
       channel,
       threadTs,
       ":warning: I couldn't reach the identity provider. Please try again shortly.",
-    ).catch(() => {});
+    );
     return { statusCode: 200, body: 'ok (broker failed)' };
   }
 
@@ -192,7 +198,7 @@ export async function handler(ev: APIGatewayProxyEvent): Promise<APIGatewayProxy
         channel,
         threadTs,
         ":warning: I couldn't start the sign-in. Please mention me again.",
-      ).catch(() => {});
+      );
       return { statusCode: 200, body: 'ok (park failed)' };
     }
 
@@ -207,18 +213,13 @@ export async function handler(ev: APIGatewayProxyEvent): Promise<APIGatewayProxy
       `:lock: First, connect your account so I can act on your behalf:\n` +
         `<${broker.consentUrl}|Sign in to continue>\n\n` +
         "I'll pick up where we left off as soon as you're done.",
-    ).catch((e) => console.error('sign-in post failed', e));
+    );
     return { statusCode: 200, body: 'ok (sign-in pending)' };
   }
 
   if (!tokenIdentityMatches(broker.token, email)) {
     console.error(`token subject mismatch for ${email} - refusing to invoke`);
-    await postToThread(
-      channel,
-      threadTs,
-      ":no_entry: The connected account doesn't match your Slack identity. " +
-        'Mention me again with "force re-auth" to sign in as yourself.',
-    ).catch(() => {});
+    await postToThread(channel, threadTs, IDENTITY_MISMATCH);
     return { statusCode: 200, body: 'ok (identity mismatch)' };
   }
 
@@ -233,7 +234,7 @@ export async function handler(ev: APIGatewayProxyEvent): Promise<APIGatewayProxy
       channel,
       threadTs,
       ':warning: Something went wrong starting your request. Please try again.',
-    ).catch(() => {});
+    );
   }
   return { statusCode: 200, body: 'ok' };
 }

@@ -25,8 +25,9 @@ export async function handler(
   const claims = event.requestContext.authorizer?.jwt?.claims ?? {};
   const subject = String(claims.sub ?? '');
 
-  // No subject means no user (a machine token). This API only holds per-person
-  // data, so there is nothing it could legitimately return.
+  // Every token that reaches here was minted for a user: the only rules granting
+  // tickets.* are on the token-exchange grant. A missing subject would mean
+  // something is badly misconfigured, so refuse rather than guess.
   if (!subject) {
     return json(403, { error: 'forbidden', detail: 'this API only serves a signed-in user' });
   }
@@ -38,6 +39,9 @@ export async function handler(
     if (event.body) payload = JSON.parse(event.body);
   } catch {
     return json(400, { error: 'bad_request', detail: 'body is not valid JSON' });
+  }
+  if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
+    return json(400, { error: 'bad_request', detail: 'body must be a JSON object' });
   }
 
   try {
@@ -55,7 +59,7 @@ export async function handler(
 
     if (method === 'PATCH' && id) {
       const status = payload.status as Status | undefined;
-      if (status && !['open', 'waiting', 'closed'].includes(status)) {
+      if (status !== undefined && !['open', 'waiting', 'closed'].includes(status)) {
         return json(400, {
           error: 'bad_request',
           detail: 'status must be open, waiting or closed',

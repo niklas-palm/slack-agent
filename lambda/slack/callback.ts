@@ -12,6 +12,7 @@ import { DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 import {
+  IDENTITY_MISMATCH,
   SESSION_TABLE,
   agentCore,
   brokerOktaToken,
@@ -67,17 +68,26 @@ export async function handler(ev: APIGatewayProxyEvent): Promise<APIGatewayProxy
 
     if (!tokenIdentityMatches(broker.token, pending.user_id)) {
       console.error(`token subject mismatch for ${pending.user_id} - refusing to invoke`);
-      await say(
-        pending,
-        ":no_entry: The connected account doesn't match your Slack identity. " +
-          'Mention me again with "force re-auth" to sign in as yourself.',
-      );
+      await say(pending, IDENTITY_MISMATCH);
       return page(403, 'Wrong account', 'That account does not match your Slack identity.');
+    }
+
+    // A bare "force re-auth" carries no question to resume.
+    if (!pending.prompt) {
+      await say(pending, ':white_check_mark: You are connected. Mention me with your question.');
+      return page(200, 'Connected', 'You can close this tab and return to Slack.');
     }
 
     console.log(`callback: resuming the agent for ${pending.user_id}`);
     await say(pending, ':white_check_mark: Thanks, you are connected. Working on it now...');
-    await invokeRuntime(broker.token, pending);
+    try {
+      await invokeRuntime(broker.token, pending);
+    } catch (e) {
+      // Signed in fine, so do not send them for a fresh link: the next mention
+      // goes straight through.
+      console.error('runtime invoke failed', e);
+      await say(pending, ':warning: Something went wrong starting your request. Please try again.');
+    }
     return page(200, 'Connected', 'You can close this tab and return to Slack.');
   } catch (e) {
     // The person is waiting in Slack, not here. The link is spent either way.

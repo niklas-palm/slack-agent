@@ -16,8 +16,10 @@ function readConfig(): typeof baseConfig {
   let local: Partial<typeof baseConfig> = {};
   try {
     local = JSON.parse(readFileSync(`${__dirname}/../../config.local.json`, 'utf8'));
-  } catch {
-    // No local override; the tracked config.json stands on its own.
+  } catch (e) {
+    // Absent is normal. Present but unparseable is not, and ignoring it would
+    // blame config.json for placeholder values the reader already replaced.
+    if ((e as { code?: string }).code !== 'ENOENT') throw e;
   }
   return { ...baseConfig, ...local, okta: { ...baseConfig.okta, ...local.okta } };
 }

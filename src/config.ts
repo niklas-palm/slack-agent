@@ -8,7 +8,7 @@
 import { readFileSync } from 'node:fs';
 
 // Only region and model are read here; webSearch, tracing and okta are read by
-// the CDK app and the Makefile from the same file.
+// the CDK app from the same file, and the Makefile reads region.
 interface SlackAgentConfig {
   region: string;
   bedrockModelId: string;

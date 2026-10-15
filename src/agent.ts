@@ -21,7 +21,7 @@ export interface SlackInvocation {
   trigger_message_ts: string;
 }
 
-export interface BuildArgs {
+interface BuildArgs {
   slack: SlackInvocation;
   sessionId: string;
   slackCtx: SlackContext;
