@@ -19,7 +19,7 @@ HASH_INPUTS := src skills config.json config.local.json Dockerfile package.json 
 
 help:
 	@echo "Local dev:"
-	@echo "  make install                       Install root + cdk deps"
+	@echo "  make install                       Install root, cdk and lambda deps"
 	@echo "  make typecheck                     tsc --noEmit (all packages)"
 	@echo "  make lint                          eslint + prettier --check"
 	@echo "  make format                        eslint --fix + prettier --write"
@@ -48,11 +48,9 @@ install:
 	cd cdk && npm install
 	cd lambda && npm install
 
-
 typecheck:
 	npx tsc --noEmit
 	cd cdk && npx tsc --noEmit
-
 
 lint:
 	npx eslint 'src/**/*.ts' 'lambda/**/*.ts' 'cdk/**/*.ts'
@@ -133,7 +131,7 @@ destroy:
 bootstrap:
 	cd cdk && $(CDK) bootstrap aws://$(ACCOUNT)/$(REGION)
 
-# Print the region config.json resolves to, for the copy-paste commands in the docs.
+# Print the region the deploy will use, for the copy-paste commands in the docs.
 region:
 	@echo $(REGION)
 

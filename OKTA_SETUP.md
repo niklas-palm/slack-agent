@@ -204,8 +204,8 @@ Copy this app's **Client ID** and **Client secret** too.
 
 ## Step 5 - AgentCore Identity credential providers
 
-These hold each app's id and secret so AgentCore can act as that client. It is
-why the agent itself never holds a secret.
+These hold each app's id and secret so AgentCore can act as that client, which
+is why no secret appears in the agent's code or configuration.
 
 This step is AWS, not Okta, and it is the one place a command beats the console:
 the vendor and the token-exchange block have to be exact. Run it from the repo

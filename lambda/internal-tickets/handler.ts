@@ -51,7 +51,7 @@ export async function handler(
     }
 
     if (method === 'POST') {
-      const title = String(payload.title ?? '').trim();
+      const title = typeof payload.title === 'string' ? payload.title.trim() : '';
       if (!title) return json(400, { error: 'bad_request', detail: 'title is required' });
       const ticket = await create(subject, title);
       return json(201, { authenticated_as: subject, created: ticket });
@@ -65,10 +65,11 @@ export async function handler(
           detail: 'status must be open, waiting or closed',
         });
       }
-      const ticket = await update(subject, id, {
-        title: payload.title === undefined ? undefined : String(payload.title),
-        status,
-      });
+      const title = payload.title;
+      if (title !== undefined && (typeof title !== 'string' || !title.trim())) {
+        return json(400, { error: 'bad_request', detail: 'title must be a non-empty string' });
+      }
+      const ticket = await update(subject, id, { title: title?.trim(), status });
       // Someone else's ticket is indistinguishable from one that does not
       // exist, which is what you want: the response leaks nothing.
       if (!ticket) return json(404, { error: 'not_found', detail: `no ticket ${id} of yours` });

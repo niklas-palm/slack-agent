@@ -5,14 +5,12 @@ import { buildAgent, runAgentStream, type SlackInvocation } from './agent.js';
 import { emit, errMsg } from './emit.js';
 import { setWorkloadToken, startInternalApiProxy } from './internalApiProxy.js';
 import { loadSlackBotToken } from './secrets.js';
-import { postFallbackToThread, type SlackContext } from './slackTools.js';
+import { postFallbackToThread } from './slackTools.js';
 
 // One AgentCore microVM per runtimeSessionId. We deliberately use a fresh
 // sessionId per Slack @-mention (the events Lambda generates a UUID), so
 // every invocation is isolated - the agent reads thread context via
 // get_slack_thread.
-//
-// One run per microVM, so nothing is shared between invocations.
 
 // The loopback proxy the agent's own code calls to reach internal APIs on
 // the user's behalf. Runs for the life of the container; one user per microVM.
@@ -63,9 +61,12 @@ const app = new BedrockAgentCoreApp({
       // captured token is safe.
       setWorkloadToken(invocation.workloadAccessToken);
 
-      void wrappedRun({ prompt, slack, sessionId: sid }).catch((e) =>
-        emit('error', { session_id: sid, error: errMsg(e) }),
-      );
+      // The microVM outlives the run by the idle timeout, and the agent is told
+      // it may background work with nohup. Drop the user's token however the
+      // run ends, so nothing left behind can still act as them.
+      void wrappedRun({ prompt, slack, sessionId: sid })
+        .catch((e) => emit('error', { session_id: sid, error: errMsg(e) }))
+        .finally(() => setWorkloadToken(undefined));
       // Nothing reads this response: the answer reaches the user through
       // respond_to_thread in Slack. Ack immediately and let the run continue.
       return { status: 'accepted', session_id: sid };
@@ -85,8 +86,9 @@ const wrappedRun = app.asyncTask(run as (...args: unknown[]) => Promise<unknown>
 // once the bot token is loaded a fallback post is always possible, even if
 // buildAgent or the stream fails afterward.
 async function run(args: RunArgs): Promise<void> {
+  const botToken = await loadSlackBotToken();
+  const slackCtx = { botToken, channel: args.slack.channel_id, threadTs: args.slack.thread_ts };
   let replied = false;
-  let slackCtx: SlackContext | undefined;
 
   // Put session.id in OpenTelemetry baggage for the run. AWS's OpenTelemetry
   // distro (loaded in the Dockerfile CMD) copies baggage onto every span, so
@@ -97,23 +99,16 @@ async function run(args: RunArgs): Promise<void> {
   );
 
   try {
-    const botToken = await loadSlackBotToken();
-    slackCtx = { botToken, channel: args.slack.channel_id, threadTs: args.slack.thread_ts };
     const { agent, hasReplied } = await buildAgent({ ...args, slackCtx });
     await context.with(traced, () => runAgentStream(agent, args.prompt, args.sessionId));
     replied = hasReplied();
   } catch (e) {
     emit('error', { session_id: args.sessionId, error: errMsg(e) });
-  } finally {
-    // The microVM outlives this run by the idle timeout, and the agent is told
-    // it may background work with nohup. Drop the user's token on every path,
-    // so nothing left behind can still act as them.
-    setWorkloadToken(undefined);
   }
 
   // If the agent never posted its own reply, post a fallback so the user
   // always sees something in their thread.
-  if (!replied && slackCtx) {
+  if (!replied) {
     await postFallbackToThread(
       slackCtx,
       ":warning: Sorry - something went wrong and I couldn't finish your request. Please try again.",

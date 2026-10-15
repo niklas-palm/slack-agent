@@ -6,7 +6,6 @@
 //
 // Run with: node test/mock-slack/server.js
 import http from 'node:http';
-import { URL } from 'node:url';
 
 const PORT = Number(process.env.MOCK_SLACK_PORT ?? 8090);
 

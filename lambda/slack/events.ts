@@ -125,7 +125,7 @@ export async function handler(ev: APIGatewayProxyEvent): Promise<APIGatewayProxy
   // A mention outside a thread starts one on the message itself.
   const threadTs = event.thread_ts ?? ts;
   const text = event.text ?? '';
-  const forceReauth = /force re-?auth/i.test(text);
+  const forceReauth = /\bforce re-?auth\b/i.test(text);
 
   let email: string;
   try {
@@ -148,7 +148,7 @@ export async function handler(ev: APIGatewayProxyEvent): Promise<APIGatewayProxy
   // out; on its own it still triggers a fresh sign-in.
   const prompt = text
     .replace(/<@[A-Z0-9]+>\s*/g, '')
-    .replace(/force re-?auth/gi, '')
+    .replace(/\bforce re-?auth\b/gi, '')
     .trim();
   if (!prompt && !forceReauth) {
     await postToThread(channel, threadTs, 'What would you like me to do?');

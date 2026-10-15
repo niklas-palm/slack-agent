@@ -9,9 +9,9 @@ token exchange (RFC 8693).
 The identity model is the point of this sample: the user's identity is
 **proven** (the runtime is invoked with the user's Okta JWT, validated by an
 inbound JWT authorizer), and the agent **exchanges that token** for one scoped
-to a downstream internal API. The agent never holds a long-lived credential and
-never acts as itself - every internal call carries the user's delegated
-identity.
+to a downstream internal API. No token ever reaches the model, the sandbox's
+files or its environment, and the agent never acts as itself - every internal
+call carries the user's delegated identity.
 
 > Third-party 3LO (e.g. "read my Spotify") is a different pattern - a separate
 > trust domain, interactive consent per provider. This sample deliberately
@@ -408,11 +408,18 @@ that yields it - see OKTA_SETUP.md steps 1 and 3.)
 - **No per-user filtering of the catalog.** The agent may try an API this user
   cannot reach and gets a clean 403, which the prompt tells it means the user is
   unauthorized rather than something being broken.
-- **The agent's shell can use the bot token.** The runtime needs it to post, and
-  the shell shares the runtime's role, so code the agent writes could read any
-  channel the bot has been invited to, not just the one it was mentioned in. The
-  Slack tools themselves are pinned to the thread. In anything real, run the
-  agent's code in a separate sandbox that does not hold the runtime's role.
+- **The agent's shell shares the runtime's role.** So code the agent writes can
+  do what that role can. Two things matter:
+  - It can read the **Slack bot token**, so it could read any channel the bot has
+    been invited to, not just the one it was mentioned in. The Slack tools
+    themselves are pinned to the thread.
+  - It can read the **exchange client's secret**. AgentCore Identity reads that
+    secret with the caller's credentials, so the runtime role has to be allowed
+    to. On its own the secret mints nothing, since no rule grants it a scope
+    without a user token, but it is a long-lived credential the agent could copy.
+
+  In anything real, run the agent's code in a separate sandbox that does not hold
+  the runtime's role.
 
 ## The toolset
 
@@ -503,9 +510,9 @@ your values in `config.local.json`, which is untracked and merged over
 `config.json`, so it only needs the keys you change.
 
 No deploy flags. Slack secrets stay in SSM. Only four values reach the container
-as env vars, and each exists only after deploy: the SSM prefix, the two internal
-API base URLs, and the observability switch. A fifth, the web-search gateway
-URL, is added when `webSearch` is on.
+as env vars: the bot token's SSM parameter name, the two internal API base URLs,
+and the observability switch. A fifth, the web-search gateway URL, is added when
+`webSearch` is on.
 
 ---
 

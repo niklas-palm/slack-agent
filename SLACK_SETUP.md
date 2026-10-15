@@ -58,8 +58,8 @@ needs the signing secret in SSM first. You'll wire the URL up in step 4.
 
 ## 3. Store the credentials in SSM
 
-The runtime and trigger Lambda read these as SecureString parameters. Create
-them once, from the repo root:
+The trigger Lambda reads both as SecureString parameters; the runtime reads only
+the bot token. Create them once, from the repo root:
 
 ```bash
 REGION=$(make -s region)   # same precedence as the deploy: config.local.json over config.json

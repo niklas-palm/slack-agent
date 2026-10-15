@@ -38,6 +38,9 @@ export interface RuntimeStackProps extends StackProps {
   readonly internalDirectoryUrl: string;
   /** Base URL of the internal ticket API, the second OBO target. */
   readonly internalTicketsUrl: string;
+  /** SSM SecureString holding the Slack bot token. The only parameter this
+   *  role may read. */
+  readonly botTokenParam: string;
 }
 
 export class RuntimeStack extends Stack {
@@ -56,8 +59,8 @@ export class RuntimeStack extends Stack {
       internalDirectoryUrl,
       internalTicketsUrl,
       exchangeProvider,
+      botTokenParam,
     } = props;
-    const stackName = this.stackName;
 
     const containerUri = `${account}.dkr.ecr.${region}.amazonaws.com/${REPO_NAME}:${imageTag}`;
     const runtimeLogGroupArn = `arn:aws:logs:${region}:${account}:log-group:/aws/bedrock-agentcore/runtimes/*`;
@@ -128,16 +131,14 @@ export class RuntimeStack extends Stack {
       }),
     );
 
-    // The Slack bot token, and nothing else under that prefix. The signing
-    // secret sits beside it, but only the trigger may read that: the agent runs
-    // arbitrary shell under this role, and whoever holds the signing secret can
-    // forge a mention as any signed-in user.
+    // The Slack bot token and nothing else. The signing secret sits beside it,
+    // but only the trigger may read that: the agent runs arbitrary shell under
+    // this role, and whoever holds the signing secret can forge a mention as any
+    // signed-in user.
     role.addToPolicy(
       new PolicyStatement({
         actions: ['ssm:GetParameter'],
-        resources: [
-          `arn:aws:ssm:${region}:${account}:parameter/${stackName}/secrets/shared/slack-bot-token`,
-        ],
+        resources: [`arn:aws:ssm:${region}:${account}:parameter${botTokenParam}`],
       }),
     );
 
@@ -233,7 +234,7 @@ export class RuntimeStack extends Stack {
         },
       },
       environmentVariables: {
-        AGENT_SHARED_SECRETS_SSM_PREFIX: `/${stackName}/secrets/shared`,
+        SLACK_BOT_TOKEN_PARAM: botTokenParam,
         INTERNAL_DIRECTORY_URL: internalDirectoryUrl,
         INTERNAL_TICKETS_URL: internalTicketsUrl,
         ...(webSearch ? { WEB_SEARCH_GATEWAY_URL: this.addWebSearchGateway(role) } : {}),

@@ -17,8 +17,8 @@ function readConfig(): typeof baseConfig {
   try {
     local = JSON.parse(readFileSync(`${__dirname}/../../config.local.json`, 'utf8'));
   } catch (e) {
-    // Absent is normal. Present but unparseable is not, and ignoring it would
-    // blame config.json for placeholder values the reader already replaced.
+    // Absent is normal. Present but unparseable is not, and silently ignoring it
+    // would blame config.json for whatever went missing.
     if ((e as { code?: string }).code !== 'ENOENT') throw e;
   }
   return { ...baseConfig, ...local, okta: { ...baseConfig.okta, ...local.okta } };
@@ -55,6 +55,11 @@ const apis = new InternalApisStack(app, 'SlackAgent-InternalApis', {
   directoryGroup: 'employees',
 });
 
+// The Slack secrets are provisioned out of band (SLACK_SETUP.md); only their
+// paths are needed. The trigger reads both, the runtime only the bot token.
+const signingSecretParam = '/SlackAgent-Runtime/secrets/shared/slack-signing-secret';
+const botTokenParam = '/SlackAgent-Runtime/secrets/shared/slack-bot-token';
+
 const runtime = new RuntimeStack(app, 'SlackAgent-Runtime', {
   env,
   imageTag,
@@ -66,17 +71,14 @@ const runtime = new RuntimeStack(app, 'SlackAgent-Runtime', {
   internalTicketsUrl: apis.ticketsUrl,
   // Must match the `provider` on every entry in src/catalog.ts.
   exchangeProvider: 'okta-exchange',
+  botTokenParam,
 });
 
-// The Slack secrets are provisioned out of band; only their paths are needed.
-// This prefix must match the Runtime stack's name: that stack's role allows
-// ssm:GetParameter on /<stackName>/secrets/shared/*.
-const secretsPrefix = '/SlackAgent-Runtime/secrets/shared';
 new SlackStack(app, 'SlackAgent-Trigger', {
   env,
   runtimeArn: runtime.runtimeArn,
-  signingSecretParam: `${secretsPrefix}/slack-signing-secret`,
-  botTokenParam: `${secretsPrefix}/slack-bot-token`,
+  signingSecretParam,
+  botTokenParam,
   brokerWorkloadName: 'slack_broker',
   userProvider: 'okta-signin',
   // offline_access makes Okta issue a refresh token, which AgentCore Identity

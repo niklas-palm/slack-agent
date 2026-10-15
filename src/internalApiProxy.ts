@@ -25,9 +25,9 @@ const PROXY_URL = `http://127.0.0.1:${PORT}`;
 
 // The current invocation's workload access token (carries the user's proven
 // identity). Set by the server when a request arrives; one user per microVM.
-let workloadToken: string | undefined;
+let currentWorkloadToken: string | undefined;
 export function setWorkloadToken(token: string | undefined): void {
-  workloadToken = token;
+  currentWorkloadToken = token;
 }
 
 // Forward one request to the real API, acting as the user. withAccessToken does
@@ -105,7 +105,7 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
       hint: `GET ${PROXY_URL}/ to list available apis`,
     });
   }
-  if (!workloadToken) {
+  if (!currentWorkloadToken) {
     return send(res, 401, {
       error: 'no proven user identity for this invocation',
       hint: 'this only works inside a real Slack-triggered invocation carrying the user JWT',
@@ -115,14 +115,21 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
   try {
     const target = `${entry.baseUrl}/${rest.join('/')}${url.search}`;
     const body = req.method === 'GET' || req.method === 'HEAD' ? undefined : await readBody(req);
-    const upstream = await forwardAsUser(entry, workloadToken, target, req.method ?? 'GET', body);
+    const upstream = await forwardAsUser(
+      entry,
+      currentWorkloadToken,
+      target,
+      req.method ?? 'GET',
+      body,
+    );
     const text = await upstream.text();
     res.writeHead(upstream.status, {
       'content-type': upstream.headers.get('content-type') ?? 'application/json',
     });
     res.end(text);
   } catch (e) {
-    // Only a refused exchange is an authorization answer, so only that is a 403,
+    // Of the errors this proxy reports itself, only a refused exchange is an
+    // authorization answer, so only that is a 403,
     // which the system prompt tells the agent not to retry. Everything else,
     // including anything thrown outside forwardAsUser, is reported as transient
     // so the agent does not tell the user they lack access after a network blip.
